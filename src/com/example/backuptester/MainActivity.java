@@ -39,7 +39,8 @@ public class MainActivity extends Activity {
 	        Message msg = Message.obtain();
 	        
 	        Bundle bundle = new Bundle();
-	        bundle.putString("MyString", "Message Received");
+	        //bundle.putString("RW", "1");
+	        bundle.putString("filename", "Message Received");
 	        
 	        msg.setData(bundle);
 	        
