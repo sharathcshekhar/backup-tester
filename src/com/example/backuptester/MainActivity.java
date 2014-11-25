@@ -28,10 +28,17 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
+	
+	/**********************
+	 ** INSTRUMENT START **
+	 **********************/
 	private HandlerThread handlerThread;
 	private IncomingHandler handler;
 	private Messenger mClientMessenger;
 	private MyServiceConnection myConnection;
+	/********************
+	 ** INSTRUMENT END **
+	 ********************/
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -51,17 +58,7 @@ public class MainActivity extends Activity {
 		 ********************/
 	}
 
-	private void backupInit() {
-		myConnection = new MyServiceConnection();
-		handlerThread = new HandlerThread("IPChandlerThread");
-        handlerThread.start();
-        handler = new IncomingHandler(handlerThread);
-        mClientMessenger = new Messenger(handler);
-
-        Intent intent = new Intent("com.example.backupmanager");
-	    bindService(intent, myConnection , Context.BIND_AUTO_CREATE);
-	}
-
+	
 	public void readFile(View view) {
 
 		EditText edit = (EditText) findViewById(R.id.editText1);
@@ -166,8 +163,19 @@ public class MainActivity extends Activity {
 	 * INSTRUMENTATION HELPER FUNCTIONS
 	 * INCLUDE THESE FUNCTIONS IN MAIN ACTIVITY
 	 * *************************************************/
-	private void sendMessage(Bundle bundle, int msg_type)
-	{
+	
+	private void backupInit() {
+		myConnection = new MyServiceConnection();
+		handlerThread = new HandlerThread("IPChandlerThread");
+        handlerThread.start();
+        handler = new IncomingHandler(handlerThread);
+        mClientMessenger = new Messenger(handler);
+
+        Intent intent = new Intent("com.example.backupmanager");
+	    bindService(intent, myConnection , Context.BIND_AUTO_CREATE);
+	}
+
+	private void sendMessage(Bundle bundle, int msg_type) {
 		if (!myConnection.isBound()) {
 			Log.d("ERROR", "STILL NOT INIT'ed");
 			return;
@@ -192,7 +200,7 @@ public class MainActivity extends Activity {
     	sendMessage(bundle, BackupGlobals.REMOTE_WRITE); // 0 - READ, 1 - WRITE
 	}
 	
-	private void download(String filename) {
+	private int download(String filename) {
 		Log.d("TEST", "File not found in SD card, downloading from dropbox");
 		Bundle bundle = new Bundle();
         bundle.putString("filename", filename);
@@ -204,7 +212,7 @@ public class MainActivity extends Activity {
 			}
 			if (BackupGlobals.sync.intValue() != 0) {
 				Log.d("TEST", "File not found");
-				return;
+				return 1;
 			}
    		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
@@ -212,5 +220,6 @@ public class MainActivity extends Activity {
 		} 
    		Log.d("TEST", "downloaded file from dropbox");
    		//TODO: The file has to be copied from SD card cache back to the original location
+   		return 0;
    }
 }
