@@ -6,8 +6,13 @@ import android.os.Message;
 import android.util.Log;
 
 class IncomingHandler extends Handler {
+	private int errorCode = 0;
+ 
+	public int getErrorCode() {
+		return errorCode;
+	}
 
-    public IncomingHandler(HandlerThread thr) {
+	public IncomingHandler(HandlerThread thr) {
         super(thr.getLooper());
     }
 
@@ -16,16 +21,17 @@ class IncomingHandler extends Handler {
         switch (msg.what) {
         case BackupGlobals.REMOTE_READ_DONE:
             Log.d("TEST", "READ completed");
-            BackupGlobals.sync = 0;
-            synchronized (BackupGlobals.sync) {
-            	BackupGlobals.sync.notify();
+            errorCode = 0;
+            synchronized (this) {
+            	notify();
 			}
             break;
         case BackupGlobals.REMOTE_READ_FAILED:
             Log.d("TEST", "READ failed");
-            BackupGlobals.sync = 404;
-            synchronized (BackupGlobals.sync) {
-            	BackupGlobals.sync.notify();
+            errorCode = 404;
+            synchronized (this) {
+            	Log.d("TEST", "NOTIFYING FAILURE");
+            	notify();
 			}
             break;
         case BackupGlobals.REMOTE_WRITE_DONE:

@@ -12,5 +12,5 @@ public class BackupGlobals {
 	public static final int REMOTE_READ_DONE = 2;
 	public static final int REMOTE_WRITE_DONE = 3;
 	public static final int REMOTE_READ_FAILED = 4;
-	public static Integer sync = new Integer(0);
+	public static BackupLib mLib = null;
 }
