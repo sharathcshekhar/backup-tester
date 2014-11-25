@@ -14,21 +14,21 @@ class IncomingHandler extends Handler {
     @Override
     public void handleMessage(Message msg) {
         switch (msg.what) {
-        case MainActivity.REMOTE_READ_DONE:
+        case BackupGlobals.REMOTE_READ_DONE:
             Log.d("TEST", "READ completed");
-            MainActivity.sync = 0;
-            synchronized (MainActivity.sync) {
-            	MainActivity.sync.notify();
+            BackupGlobals.sync = 0;
+            synchronized (BackupGlobals.sync) {
+            	BackupGlobals.sync.notify();
 			}
             break;
-        case MainActivity.REMOTE_READ_FAILED:
+        case BackupGlobals.REMOTE_READ_FAILED:
             Log.d("TEST", "READ failed");
-            MainActivity.sync = 404;
-            synchronized (MainActivity.sync) {
-            	MainActivity.sync.notify();
+            BackupGlobals.sync = 404;
+            synchronized (BackupGlobals.sync) {
+            	BackupGlobals.sync.notify();
 			}
             break;
-        case MainActivity.REMOTE_WRITE_DONE:
+        case BackupGlobals.REMOTE_WRITE_DONE:
             Log.d("TEST", "WRITE completed");
             break;
         default:

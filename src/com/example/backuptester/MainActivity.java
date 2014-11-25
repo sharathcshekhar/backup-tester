@@ -31,25 +31,18 @@ public class MainActivity extends Activity {
 	private HandlerThread handlerThread;
 	private IncomingHandler handler;
 	private Messenger mClientMessenger;
-	static final String CACHE_PATH = Environment.getExternalStorageDirectory().toString() + File.separator + "backup_cache";
-	static final String DEFAULT_FILE_DATA = "data: ";
-	public static final int REMOTE_READ = 0;
-	public static final int REMOTE_WRITE = 1;
-	public static final int REMOTE_READ_DONE = 2;
-	public static final int REMOTE_WRITE_DONE = 3;
-	public static final int REMOTE_READ_FAILED = 4;
-	public static Integer sync = new Integer(0);
-	private MyServiceConnection myConnection = new MyServiceConnection();
+	private MyServiceConnection myConnection;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
-		File cacheDirectory = new File(CACHE_PATH);
+		File cacheDirectory = new File(BackupGlobals.CACHE_PATH);
 		boolean ret = cacheDirectory.mkdir();
-		Log.d("TEST", "CACHE PATH = " + CACHE_PATH + " ret: " + ret);
-
+		Log.d("TEST", "CACHE PATH = " + BackupGlobals.CACHE_PATH + " ret: " + ret);
+		
+		myConnection; = new MyServiceConnection();
 		handlerThread = new HandlerThread("IPChandlerThread");
         handlerThread.start();
         handler = new IncomingHandler(handlerThread);
@@ -57,7 +50,6 @@ public class MainActivity extends Activity {
 
         Intent intent = new Intent("com.example.backupmanager");
 	    bindService(intent, myConnection , Context.BIND_AUTO_CREATE);
-	 //   myService = myConnection.getMyService();
 	}
 	
 	public void readFile(View view) {
@@ -67,19 +59,19 @@ public class MainActivity extends Activity {
 		Log.d("TEST", "READ button pressed, filename : " + filename);
 		TextView txtView = (TextView)findViewById(R.id.textView1);
 	    
-		File myFile = new File(CACHE_PATH, filename);
+		File myFile = new File(BackupGlobals.CACHE_PATH, filename);
 
 		if (!myFile.exists()) {
 			Log.d("TEST", "File not found in SD card, downloading from dropbox");
 			Bundle bundle = new Bundle();
 	        bundle.putString("filename", filename);
-	   		sendMessage(bundle, REMOTE_READ);
+	   		sendMessage(bundle, BackupGlobals.REMOTE_READ);
 	   		try {
 	   			Log.d("TEST", "Wating for read to complete");
-				synchronized (sync) {
-					sync.wait();
+				synchronized (BackupGlobals.sync) {
+					BackupGlobals.sync.wait();
 				}
-				if (sync.intValue() != 0) {
+				if (BackupGlobals.sync.intValue() != 0) {
 					Log.d("TEST", "File not found");
 					return;
 				}
@@ -89,7 +81,7 @@ public class MainActivity extends Activity {
 			} 
 	   		Log.d("TEST", "downloaded file from dropbox");
 	   		/*TODO: wait here */
-	   		myFile = new File(CACHE_PATH, filename);
+	   		myFile = new File(BackupGlobals.CACHE_PATH, filename);
 		} else {
 			Log.d("TEST", "Doing a local read");
 		}
@@ -118,13 +110,13 @@ public class MainActivity extends Activity {
 		Log.d("TEST", "WRITE button pressed, filename : " + filename);
 
 		try {
-			File myFile = new File(CACHE_PATH, filename);
+			File myFile = new File(BackupGlobals.CACHE_PATH, filename);
 			myFile.createNewFile();
 			FileOutputStream fOut = new FileOutputStream(myFile);
 			OutputStreamWriter myOutWriter = 
 								new OutputStreamWriter(fOut);
 		
-			myOutWriter.append(DEFAULT_FILE_DATA + filename);
+			myOutWriter.append(BackupGlobals.DEFAULT_FILE_DATA + filename);
 		 	myOutWriter.close();
 			fOut.close();
 		} catch (IOException e) {
@@ -134,7 +126,7 @@ public class MainActivity extends Activity {
 		
 		Bundle bundle = new Bundle();
         bundle.putString("filename", filename);
-    	sendMessage(bundle, REMOTE_WRITE); // 0 - READ, 1 - WRITE
+    	sendMessage(bundle, BackupGlobals.REMOTE_WRITE); // 0 - READ, 1 - WRITE
   	}
 	
 	public void deleteFile(View view) {
@@ -142,7 +134,7 @@ public class MainActivity extends Activity {
 		String filename = edit.getText().toString();
 		Log.d("TEST", "DELETE button pressed, filename : " + filename);
 
-		File myFile = new File(CACHE_PATH, filename);
+		File myFile = new File(BackupGlobals.CACHE_PATH, filename);
 		if (myFile.delete()) {
 			Log.d("TEST", "File delete");
 		} else {
@@ -168,64 +160,15 @@ public class MainActivity extends Activity {
 			e.printStackTrace();
 		}
 	}
-	/*
-	class IncomingHandler extends Handler {
 
-        public IncomingHandler(HandlerThread thr) {
-            super(thr.getLooper());
-        }
-
-        @Override
-        public void handleMessage(Message msg) {
-            switch (msg.what) {
-            case REMOTE_READ_DONE:
-                Log.d("TEST", "READ completed");
-            	sync = 0;
-                synchronized (sync) {
-                   	sync.notify();
-				}
-                break;
-            case REMOTE_READ_FAILED:
-                Log.d("TEST", "READ failed");
-                sync = 404;
-                synchronized (sync) {
-                	sync.notify();
-				}
-                break;
-            case REMOTE_WRITE_DONE:
-                Log.d("TEST", "WRITE completed");
-                break;
-            default:
-                break;
-            }
-        }
-    }
-	*/
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-/*
-	private ServiceConnection myConnection = new ServiceConnection() {
-		@Override
-		public void onServiceConnected(ComponentName className, 
-                                                IBinder service) {
-			Log.d("DBG", "Binding message");
-			myService = new Messenger(service);
-            isBound = true;
-        }
 
-        public void onServiceDisconnected(ComponentName className) {
-            myService = null;
-            isBound = false;
-        }
-
-		
-	};	
-*/
-    @Override
+	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle action bar item clicks here. The action bar will
 		// automatically handle clicks on the Home/Up button, so long
@@ -237,5 +180,3 @@ public class MainActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 }
-
-//private ServiceConnection myConnection = new ServiceConnection() {
