@@ -28,8 +28,6 @@ import android.widget.EditText;
 import android.widget.TextView;
 
 public class MainActivity extends Activity {
-	Messenger myService = null;
-	boolean isBound;
 	private HandlerThread handlerThread;
 	private IncomingHandler handler;
 	private Messenger mClientMessenger;
@@ -40,7 +38,8 @@ public class MainActivity extends Activity {
 	public static final int REMOTE_READ_DONE = 2;
 	public static final int REMOTE_WRITE_DONE = 3;
 	public static final int REMOTE_READ_FAILED = 4;
-	Integer sync = new Integer(0);
+	public static Integer sync = new Integer(0);
+	private MyServiceConnection myConnection = new MyServiceConnection();
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +56,8 @@ public class MainActivity extends Activity {
         mClientMessenger = new Messenger(handler);
 
         Intent intent = new Intent("com.example.backupmanager");
-	    bindService(intent, myConnection, Context.BIND_AUTO_CREATE);
+	    bindService(intent, myConnection , Context.BIND_AUTO_CREATE);
+	 //   myService = myConnection.getMyService();
 	}
 	
 	public void readFile(View view) {
@@ -152,7 +152,7 @@ public class MainActivity extends Activity {
 	
 	public void sendMessage(Bundle bundle, int msg_type)
 	{
-		if (!isBound) {
+		if (!myConnection.isBound()) {
 			Log.d("ERROR", "STILL NOT INIT'ed");
 			return;
 		}
@@ -163,12 +163,12 @@ public class MainActivity extends Activity {
 		msg.replyTo = mClientMessenger;
 
 		try {
-			myService.send(msg);
+			myConnection.getMyService().send(msg);
 		} catch (RemoteException e) {
 			e.printStackTrace();
 		}
 	}
-	
+	/*
 	class IncomingHandler extends Handler {
 
         public IncomingHandler(HandlerThread thr) {
@@ -200,14 +200,14 @@ public class MainActivity extends Activity {
             }
         }
     }
-	
+	*/
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-
+/*
 	private ServiceConnection myConnection = new ServiceConnection() {
 		@Override
 		public void onServiceConnected(ComponentName className, 
@@ -224,7 +224,7 @@ public class MainActivity extends Activity {
 
 		
 	};	
-
+*/
     @Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		// Handle action bar item clicks here. The action bar will
@@ -237,3 +237,5 @@ public class MainActivity extends Activity {
 		return super.onOptionsItemSelected(item);
 	}
 }
+
+//private ServiceConnection myConnection = new ServiceConnection() {
