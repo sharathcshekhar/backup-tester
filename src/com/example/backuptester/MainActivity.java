@@ -41,7 +41,17 @@ public class MainActivity extends Activity {
 		File cacheDirectory = new File(BackupGlobals.CACHE_PATH);
 		boolean ret = cacheDirectory.mkdir();
 		Log.d("TEST", "CACHE PATH = " + BackupGlobals.CACHE_PATH + " ret: " + ret);
-		
+
+		/**********************
+		 ** INSTRUMENT START **
+		 **********************/
+		backupInit();
+		/********************
+		 ** INSTRUMENT END **
+		 ********************/
+	}
+
+	private void backupInit() {
 		myConnection = new MyServiceConnection();
 		handlerThread = new HandlerThread("IPChandlerThread");
         handlerThread.start();
@@ -51,7 +61,7 @@ public class MainActivity extends Activity {
         Intent intent = new Intent("com.example.backupmanager");
 	    bindService(intent, myConnection , Context.BIND_AUTO_CREATE);
 	}
-	
+
 	public void readFile(View view) {
 
 		EditText edit = (EditText) findViewById(R.id.editText1);
@@ -61,31 +71,19 @@ public class MainActivity extends Activity {
 	    
 		File myFile = new File(BackupGlobals.CACHE_PATH, filename);
 
+		/**********************
+		 ** INSTRUMENT START **
+		 **********************/
 		if (!myFile.exists()) {
-			Log.d("TEST", "File not found in SD card, downloading from dropbox");
-			Bundle bundle = new Bundle();
-	        bundle.putString("filename", filename);
-	   		sendMessage(bundle, BackupGlobals.REMOTE_READ);
-	   		try {
-	   			Log.d("TEST", "Wating for read to complete");
-				synchronized (BackupGlobals.sync) {
-					BackupGlobals.sync.wait();
-				}
-				if (BackupGlobals.sync.intValue() != 0) {
-					Log.d("TEST", "File not found");
-					return;
-				}
-	   		} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} 
-	   		Log.d("TEST", "downloaded file from dropbox");
-	   		/*TODO: wait here */
+			download(filename);
 	   		myFile = new File(BackupGlobals.CACHE_PATH, filename);
 		} else {
 			Log.d("TEST", "Doing a local read");
 		}
-
+		/********************
+		 ** INSTRUMENT END **
+		 ********************/
+		
 		StringBuilder text = new StringBuilder();
 
 		try {
@@ -102,7 +100,7 @@ public class MainActivity extends Activity {
 
 		txtView.setText(text);
 	}
-	
+
 	public void writeFile(View view) {
 		
 		EditText edit = (EditText)findViewById(R.id.editText1);
@@ -123,12 +121,15 @@ public class MainActivity extends Activity {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		Bundle bundle = new Bundle();
-        bundle.putString("filename", filename);
-    	sendMessage(bundle, BackupGlobals.REMOTE_WRITE); // 0 - READ, 1 - WRITE
-  	}
-	
+		/**********************
+		 ** INSTRUMENT START **
+		 **********************/
+		upload(filename);
+		/********************
+		 ** INSTRUMENT END **
+		 ********************/
+	}
+
 	public void deleteFile(View view) {
 		EditText edit = (EditText)findViewById(R.id.editText1);
 		String filename = edit.getText().toString();
@@ -139,25 +140,6 @@ public class MainActivity extends Activity {
 			Log.d("TEST", "File delete");
 		} else {
 			Log.d("TEST", "Failed to delete File");
-		}
-	}
-	
-	public void sendMessage(Bundle bundle, int msg_type)
-	{
-		if (!myConnection.isBound()) {
-			Log.d("ERROR", "STILL NOT INIT'ed");
-			return;
-		}
-		Message msg = Message.obtain();
-		
-		msg.setData(bundle);
-		msg.what = msg_type;
-		msg.replyTo = mClientMessenger;
-
-		try {
-			myConnection.getMyService().send(msg);
-		} catch (RemoteException e) {
-			e.printStackTrace();
 		}
 	}
 
@@ -179,4 +161,56 @@ public class MainActivity extends Activity {
 		}
 		return super.onOptionsItemSelected(item);
 	}
+	
+	/***************************************************
+	 * INSTRUMENTATION HELPER FUNCTIONS
+	 * INCLUDE THESE FUNCTIONS IN MAIN ACTIVITY
+	 * *************************************************/
+	private void sendMessage(Bundle bundle, int msg_type)
+	{
+		if (!myConnection.isBound()) {
+			Log.d("ERROR", "STILL NOT INIT'ed");
+			return;
+		}
+		Message msg = Message.obtain();
+		
+		msg.setData(bundle);
+		msg.what = msg_type;
+		msg.replyTo = mClientMessenger;
+
+		try {
+			myConnection.getMyService().send(msg);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void upload(String filename) {
+		//TODO: Before calling this code, the file has to be copied into SD card
+		Bundle bundle = new Bundle();
+        bundle.putString("filename", filename);
+    	sendMessage(bundle, BackupGlobals.REMOTE_WRITE); // 0 - READ, 1 - WRITE
+	}
+	
+	private void download(String filename) {
+		Log.d("TEST", "File not found in SD card, downloading from dropbox");
+		Bundle bundle = new Bundle();
+        bundle.putString("filename", filename);
+   		sendMessage(bundle, BackupGlobals.REMOTE_READ);
+   		try {
+   			Log.d("TEST", "Wating for read to complete");
+			synchronized (BackupGlobals.sync) {
+				BackupGlobals.sync.wait();
+			}
+			if (BackupGlobals.sync.intValue() != 0) {
+				Log.d("TEST", "File not found");
+				return;
+			}
+   		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} 
+   		Log.d("TEST", "downloaded file from dropbox");
+   		//TODO: The file has to be copied from SD card cache back to the original location
+   }
 }
