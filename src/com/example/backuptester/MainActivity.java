@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
 		boolean ret = cacheDirectory.mkdir();
 		Log.d("TEST", "CACHE PATH = " + BackupGlobals.CACHE_PATH + " ret: " + ret);
 		
-		myConnection; = new MyServiceConnection();
+		myConnection = new MyServiceConnection();
 		handlerThread = new HandlerThread("IPChandlerThread");
         handlerThread.start();
         handler = new IncomingHandler(handlerThread);
