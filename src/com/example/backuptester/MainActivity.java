@@ -39,7 +39,8 @@ public class MainActivity extends Activity {
 	public static final int REMOTE_WRITE = 1;
 	public static final int REMOTE_READ_DONE = 2;
 	public static final int REMOTE_WRITE_DONE = 3;
-	Object sync = new Object();
+	public static final int REMOTE_READ_FAILED = 4;
+	Integer sync = new Integer(0);
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -78,10 +79,14 @@ public class MainActivity extends Activity {
 				synchronized (sync) {
 					sync.wait();
 				}
+				if (sync.intValue() != 0) {
+					Log.d("TEST", "File not found");
+					return;
+				}
 	   		} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}
+			} 
 	   		Log.d("TEST", "downloaded file from dropbox");
 	   		/*TODO: wait here */
 	   		myFile = new File(CACHE_PATH, filename);
@@ -175,6 +180,14 @@ public class MainActivity extends Activity {
             switch (msg.what) {
             case REMOTE_READ_DONE:
                 Log.d("TEST", "READ completed");
+            	sync = 0;
+                synchronized (sync) {
+                   	sync.notify();
+				}
+                break;
+            case REMOTE_READ_FAILED:
+                Log.d("TEST", "READ failed");
+                sync = 404;
                 synchronized (sync) {
                 	sync.notify();
 				}
